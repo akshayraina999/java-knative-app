@@ -20,7 +20,10 @@ spec:
     image: gcr.io/kaniko-project/executor:debug
     command: ['cat']
     tty: true
- volumes:
+    volumeMounts:
+    - name: registry-auth
+      mountPath: /kaniko/.docker
+  volumes:
   - name: registry-auth
     secret:
       secretName: harbor-creds
@@ -32,7 +35,7 @@ spec:
     }
     
     environment {
-        REGISTRY   = "harbor-core.devops-tools.svc.cluster.local:80" // Cluster-internal Harbor URL
+        REGISTRY   = "harbor-core.devops-tools.svc.cluster.local:80" // Corrected internal endpoint
         IMAGE_NAME = "apps/java-knative-service"
         IMAGE_TAG  = "${BUILD_NUMBER}"
     }
@@ -46,7 +49,6 @@ spec:
         
         stage('Quality Gate') {
             steps {
-                // Force this step to run inside the Maven container which has Java runtime
                 container('maven') {
                     sonarScan(projectKey: 'java-knative-app', projectName: 'Java-Knative-App')
                 }
@@ -55,10 +57,8 @@ spec:
         
         stage('Container Build') {
             steps {
-                // Force this step to run inside the Kaniko container to build without docker.sock
                 container('kaniko') {
                     echo "🚀 Building and pushing container image to Harbor..."
-                    // Call your shared library image builder task here
                     buildImage(imageName: "${REGISTRY}/${IMAGE_NAME}", tag: "${IMAGE_TAG}")
                 }
             }
@@ -66,7 +66,6 @@ spec:
         
         stage('Update Git Manifest (GitOps Push)') {
             steps {
-                // Running back inside default/maven container to execute git mutations
                 container('maven') {
                     echo "📝 Updating GitOps Image Tag target to ${IMAGE_TAG}..."
                     sh """
