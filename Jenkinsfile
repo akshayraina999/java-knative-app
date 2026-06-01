@@ -20,12 +20,19 @@ spec:
     image: gcr.io/kaniko-project/executor:debug
     command: ['cat']
     tty: true
+ volumes:
+  - name: registry-auth
+    secret:
+      secretName: harbor-creds
+      items:
+      - key: .dockerconfigjson
+        path: config.json
 '''
         }
     }
     
     environment {
-        REGISTRY   = "harbor.devops-tools.svc.cluster.local:80" // Cluster-internal Harbor URL
+        REGISTRY   = "harbor-core.devops-tools.svc.cluster.local:80" // Cluster-internal Harbor URL
         IMAGE_NAME = "apps/java-knative-service"
         IMAGE_TAG  = "${BUILD_NUMBER}"
     }
