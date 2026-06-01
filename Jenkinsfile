@@ -69,8 +69,11 @@ spec:
                 container('maven') {
                     echo "📝 Updating GitOps Image Tag target to ${IMAGE_TAG}..."
                     
-                    // Explicitly tracking and establishing the Git workspace context
                     sh """
+                        # Tell git to bypass ownership enforcement for this workspace folder
+                        git config --global --add safe.directory /home/jenkins/agent/workspace/java-knative-app
+                        
+                        # Now re-initialize clean tracking handles
                         git init
                         git config user.email "jenkins-automation@local.com"
                         git config user.name "Jenkins CI"
@@ -82,7 +85,7 @@ spec:
                         git add k8s-manifests/knative-service.yaml
                         git commit -m "chore: bumped application image tag to version ${IMAGE_TAG} [skip ci]" || echo "No changes to commit"
                         
-                        # Using the implicit build token credentials environment to authorize the push
+                        # Force push back to the origin tracking branch
                         git push origin HEAD:main
                     """
                 }
