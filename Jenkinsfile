@@ -68,13 +68,22 @@ spec:
             steps {
                 container('maven') {
                     echo "📝 Updating GitOps Image Tag target to ${IMAGE_TAG}..."
+                    
+                    // Explicitly tracking and establishing the Git workspace context
                     sh """
-                        sed -i "s|image: .*|image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g" k8s-manifests/knative-service.yaml
+                        git init
                         git config user.email "jenkins-automation@local.com"
                         git config user.name "Jenkins CI"
+                        
+                        # Apply the tag substitution modification
+                        sed -i "s|image: .*|image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g" k8s-manifests/knative-service.yaml
+                        
+                        # Stage, commit, and push back up to the tracking branch
                         git add k8s-manifests/knative-service.yaml
-                        git commit -m "chore: bumped application image tag to version ${IMAGE_TAG} [skip ci]"
-                        git push origin main
+                        git commit -m "chore: bumped application image tag to version ${IMAGE_TAG} [skip ci]" || echo "No changes to commit"
+                        
+                        # Using the implicit build token credentials environment to authorize the push
+                        git push origin HEAD:main
                     """
                 }
             }
