@@ -69,25 +69,27 @@ spec:
                 container('maven') {
                     echo "📝 Updating GitOps Image Tag target to ${IMAGE_TAG}..."
                     
-                    sh """
-                        # Tell git to bypass ownership enforcement for this workspace folder
-                        git config --global --add safe.directory /home/jenkins/agent/workspace/java-knative-app
-                        
-                        # Now re-initialize clean tracking handles
-                        git init
-                        git config user.email "jenkins-automation@local.com"
-                        git config user.name "Jenkins CI"
-                        
-                        # Apply the tag substitution modification
-                        sed -i "s|image: .*|image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g" k8s-manifests/knative-service.yaml
-                        
-                        # Stage, commit, and push back up to the tracking branch
-                        git add k8s-manifests/knative-service.yaml
-                        git commit -m "chore: bumped application image tag to version ${IMAGE_TAG} [skip ci]" || echo "No changes to commit"
-                        
-                        # Force push back to the origin tracking branch
-                        git push origin HEAD:main
-                    """
+                    // Securely bind your saved Jenkins credentials to temporary environment variables
+                    withCredentials([usernamePassword(credentialsId: 'github-token-auth', 
+                                                     usernameVariable: 'GH_USER', 
+                                                     passwordVariable: 'GH_TOKEN')]) {
+                        sh """
+                            git config --global --add safe.directory /home/jenkins/agent/workspace/java-knative-app
+                            git init
+                            git config user.email "jenkins-automation@local.com"
+                            git config user.name "Jenkins CI"
+                            
+                            # Modify the deployment image tag version
+                            sed -i "s|image: .*|image: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}|g" k8s-manifests/knative-service.yaml
+                            
+                            # Stage and commit locally
+                            git add k8s-manifests/knative-service.yaml
+                            git commit -m "chore: bumped application image tag to version ${IMAGE_TAG} [skip ci]" || echo "No changes to commit"
+                            
+                            # Inject authentication tokens straight into the remote push target line
+                            git push https://${GH_USER}:${GH_TOKEN}@github.com/akshayraina999/java-knative-app.git HEAD:main
+                        """
+                    }
                 }
             }
         }
