@@ -12,7 +12,7 @@ spec:
         autoscaling.knative.dev/window: "60s"
     spec:
       containers:
-        - image: harbor.devops-tools.svc.cluster.local/apps/java-knative-service:1 # Will be dynamically updated by Jenkins
+        - image: harbor-core.devops-tools.svc.cluster.local:80/apps/java-knative-service:14
           ports:
             - containerPort: 8080
           resources:
