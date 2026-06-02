@@ -3,7 +3,7 @@ apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: java-knative-service
-  namespace: dev-apps
+  namespace: devops-tools
 spec:
   template:
     metadata:
